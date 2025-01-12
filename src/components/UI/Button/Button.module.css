@@ -1,0 +1,74 @@
+/* components/ui/Button/Button.module.css */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.primary {
+  background-color: #0070f3;
+  color: white;
+}
+
+.primary:hover {
+  background-color: #0051b3;
+}
+
+.secondary {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.secondary:hover {
+  background-color: #e5e5e5;
+}
+
+.danger {
+  background-color: #dc2626;
+  color: white;
+}
+
+.danger:hover {
+  background-color: #b91c1c;
+}
+
+.small {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.medium {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+.loading {
+  position: relative;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.loadingSpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
