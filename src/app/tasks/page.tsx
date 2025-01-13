@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 import { User } from "@supabase/supabase-js";
+import { TaskForm } from "@/app/tasks/components/TaskForm/TaskForm";
+import { TaskFilters } from "@/app/tasks/components/TaskFilters/TaskFilters";
+import { TaskSort } from "@/app/tasks/components/TaskSort/TaskSort";
+import { EditTaskModal } from "@/app/tasks/components/EditTaskModal/EditTaskModal";
 import { Task } from "@/types/task";
-import { TaskForm } from "@/components/UI/TaskForm/TaskForm";
-import { TaskFilters } from "@/components/UI/TaskFilter/TaskFilters";
-import { TaskStats } from "@/components/UI/TaskStats/TaskStats";
-import { Button } from "@/components/UI/Button/Button";
-import { EditTaskModal } from "@/components/UI/EditTaskModal/EditTaskModal";
 import styles from "./tasks.module.css";
 
 const TasksPage = () => {
@@ -20,11 +19,22 @@ const TasksPage = () => {
   const [selectedPriority, setSelectedPriority] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [sortBy, setSortBy] = useState<
+    "priority" | "due_date" | "title" | "created_at"
+  >("created_at");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const router = useRouter();
 
   // Get unique categories from tasks
   const categories = [
-    ...new Set(tasks.map((task) => task.category).filter(Boolean)),
+    ...new Set(
+      tasks
+        .map((task) => task.category)
+        .filter(
+          (category): category is string =>
+            typeof category === "string" && category !== ""
+        )
+    ),
   ];
 
   const fetchTasks = async () => {
@@ -50,7 +60,7 @@ const TasksPage = () => {
       const { data } = await supabase.auth.getUser();
 
       if (!data?.user) {
-        router.push("/auth/login"); // Redirect to login if not authenticated
+        router.push("/auth/login");
       } else {
         setUser(data.user);
         fetchTasks();
@@ -61,6 +71,8 @@ const TasksPage = () => {
   }, [router]);
 
   const handleSubmit = async (taskData: Omit<Task, "id" | "completed">) => {
+    console.log("Task data received in handleSubmit:", taskData);
+
     const {
       data: { session },
       error: sessionError,
@@ -84,9 +96,40 @@ const TasksPage = () => {
 
     if (response.ok) {
       setMessage("Task added successfully!");
-      fetchTasks(); // Refresh tasks list
+      fetchTasks();
     } else {
       setMessage(`Error: ${data.error}`);
+    }
+  };
+
+  const updateTask = async (taskId: number, updatedData: Partial<Task>) => {
+    try {
+      const cleanedData = {
+        ...updatedData,
+        due_date: updatedData.due_date || null,
+      };
+
+      const { error } = await supabase
+        .from("tasks")
+        .update(cleanedData)
+        .match({ id: taskId });
+
+      if (error) {
+        console.error("Supabase error details:", error);
+        throw error;
+      }
+
+      setTasks(
+        tasks.map((task) =>
+          task.id === taskId ? { ...task, ...cleanedData } : task
+        )
+      );
+      setMessage("Task updated successfully!");
+    } catch (error) {
+      console.error("Error updating task:", error);
+      setMessage(
+        error instanceof Error ? error.message : "Error updating task"
+      );
     }
   };
 
@@ -107,59 +150,6 @@ const TasksPage = () => {
     }
   };
 
-  const updateTask = async (taskId: number, updatedData: Partial<Task>) => {
-    try {
-      // Clean up the data before sending to Supabase
-      const cleanedData = {
-        ...updatedData,
-        due_date: updatedData.due_date || null,
-      };
-
-      // Log the data being sent
-      console.log("Updating task:", { taskId, cleanedData });
-
-      const { error } = await supabase
-        .from("tasks")
-        .update(cleanedData)
-        .match({ id: taskId })
-        .select();
-
-      // Log the full response
-      console.log("Supabase response:", { error });
-
-      if (error) {
-        console.error("Supabase error details:", error);
-        throw error;
-      }
-
-      setTasks(
-        tasks.map((task) =>
-          task.id === taskId ? { ...task, ...cleanedData } : task
-        )
-      );
-      setMessage("Task updated successfully!");
-    } catch (error) {
-      console.error("Error updating task:", {
-        error,
-        typeof: typeof error,
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
-      setMessage("Error updating task");
-    }
-  };
-
-  // Filter tasks based on search, priority, and category
-  const filteredTasks = tasks.filter((task) => {
-    const matchesSearch =
-      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesPriority =
-      !selectedPriority || task.priority === selectedPriority;
-    const matchesCategory =
-      !selectedCategory || task.category === selectedCategory;
-    return matchesSearch && matchesPriority && matchesCategory;
-  });
-
   const toggleTaskCompletion = async (
     taskId: number,
     currentStatus: boolean
@@ -167,7 +157,7 @@ const TasksPage = () => {
     try {
       const { error } = await supabase
         .from("tasks")
-        .update({ completed: !currentStatus || false })
+        .update({ completed: !currentStatus })
         .match({ id: taskId });
 
       if (error) throw error;
@@ -182,6 +172,52 @@ const TasksPage = () => {
     }
   };
 
+  const handleSortChange = (
+    newSort: "priority" | "due_date" | "title" | "created_at"
+  ) => {
+    setSortBy(newSort);
+  };
+
+  const handleOrderChange = () => {
+    setSortOrder((current) => (current === "asc" ? "desc" : "asc"));
+  };
+
+  const sortTasks = (tasks: Task[]) => {
+    return [...tasks].sort((a, b) => {
+      switch (sortBy) {
+        case "priority": {
+          const priorityOrder = { high: 3, medium: 2, low: 1 };
+          const aValue = priorityOrder[a.priority] || 0;
+          const bValue = priorityOrder[b.priority] || 0;
+          return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+        }
+        case "due_date": {
+          const aDate = a.due_date ? new Date(a.due_date).getTime() : 0;
+          const bDate = b.due_date ? new Date(b.due_date).getTime() : 0;
+          return sortOrder === "asc" ? aDate - bDate : bDate - aDate;
+        }
+        case "title":
+          return sortOrder === "asc"
+            ? a.title.localeCompare(b.title)
+            : b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    });
+  };
+
+  // Filter tasks based on search, priority, and category
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesPriority =
+      !selectedPriority || task.priority === selectedPriority;
+    const matchesCategory =
+      !selectedCategory || task.category === selectedCategory;
+    return matchesSearch && matchesPriority && matchesCategory;
+  });
+
   if (!user) {
     return <p>Loading...</p>;
   }
@@ -192,22 +228,23 @@ const TasksPage = () => {
 
       <TaskForm onSubmit={handleSubmit} />
 
-      <TaskFilters
-        onSearchChange={setSearchQuery}
-        onPriorityChange={setSelectedPriority}
-        onCategoryChange={setSelectedCategory}
-        categories={categories}
-      />
-
-      <TaskStats tasks={tasks} />
-
-      {editingTask && (
-        <EditTaskModal
-          task={editingTask}
-          onSave={updateTask}
-          onClose={() => setEditingTask(null)}
+      <div className={styles.toolbarRow}>
+        <TaskFilters
+          onSearchChange={setSearchQuery}
+          onPriorityChange={setSelectedPriority}
+          onCategoryChange={setSelectedCategory}
+          categories={categories}
+          searchValue={searchQuery}
+          selectedPriority={selectedPriority}
+          selectedCategory={selectedCategory}
         />
-      )}
+        <TaskSort
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
+          onOrderChange={handleOrderChange}
+        />
+      </div>
 
       {message && <p className={styles.message}>{message}</p>}
 
@@ -217,7 +254,7 @@ const TasksPage = () => {
           <p className={styles.emptyMessage}>No tasks found.</p>
         ) : (
           <ul>
-            {filteredTasks.map((task) => (
+            {sortTasks(filteredTasks).map((task) => (
               <li
                 key={task.id}
                 className={`${styles.taskItem} ${
@@ -256,7 +293,7 @@ const TasksPage = () => {
                   </div>
                 </div>
                 <div className={styles.taskActions}>
-                  <Button
+                  <button
                     onClick={() => setEditingTask(task)}
                     className={styles.editButton}
                     aria-label="Edit task"
@@ -273,8 +310,8 @@ const TasksPage = () => {
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     onClick={() => deleteTask(task.id)}
                     className={styles.deleteButton}
                     aria-label="Delete task"
@@ -290,13 +327,21 @@ const TasksPage = () => {
                     >
                       <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                     </svg>
-                  </Button>
+                  </button>
                 </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {editingTask && (
+        <EditTaskModal
+          task={editingTask}
+          onSave={updateTask}
+          onClose={() => setEditingTask(null)}
+        />
+      )}
     </div>
   );
 };

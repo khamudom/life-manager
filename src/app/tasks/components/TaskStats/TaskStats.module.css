@@ -21,7 +21,7 @@
 }
 
 .statCard h3 {
-  color: #64748b;
+  color: var(--text-primary);
   font-size: 0.875rem;
   margin-bottom: 0.5rem;
 }

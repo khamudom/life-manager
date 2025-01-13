@@ -21,6 +21,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSubmit }) => {
     setIsSubmitting(true);
 
     try {
+      console.log("Submitting task with data:", {
+        title,
+        description,
+        priority,
+        category,
+        due_date: dueDate,
+      });
+
       await onSubmit({
         title,
         description,

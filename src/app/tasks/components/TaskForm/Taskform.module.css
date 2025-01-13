@@ -19,7 +19,7 @@
 
 .label {
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .select,

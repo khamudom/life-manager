@@ -16,7 +16,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
   const [priority, setPriority] = useState(task.priority);
-  const [category, setCategory] = useState(task.category);
+  const [category, setCategory] = useState<string>(task.category ?? "");
   const [dueDate, setDueDate] = useState(
     task.due_date ? task.due_date.split("T")[0] : ""
   );
@@ -75,7 +75,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               <label>Category</label>
               <input
                 type="text"
-                value={category}
+                value={category || ""}
                 onChange={(e) => setCategory(e.target.value)}
               />
             </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Input } from "../Input/Input";
+import { Input } from "../../../../components/UI/Input/Input";
 import styles from "./TaskFilters.module.css";
 
 interface TaskFiltersProps {
@@ -7,6 +7,9 @@ interface TaskFiltersProps {
   onPriorityChange: (priority: string) => void;
   onCategoryChange: (category: string) => void;
   categories: string[];
+  searchValue: string;
+  selectedPriority: string;
+  selectedCategory: string;
 }
 
 export const TaskFilters: React.FC<TaskFiltersProps> = ({
@@ -14,6 +17,9 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   onPriorityChange,
   onCategoryChange,
   categories,
+  searchValue,
+  selectedPriority,
+  selectedCategory,
 }) => {
   return (
     <div className={styles.filters}>
@@ -21,11 +27,13 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
         label="Search"
         type="search"
         placeholder="Search tasks..."
+        value={searchValue}
         onChange={(e) => onSearchChange(e.target.value)}
         className={styles.searchInput}
       />
 
       <select
+        value={selectedPriority}
         onChange={(e) => onPriorityChange(e.target.value)}
         className={styles.select}
       >
@@ -36,6 +44,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
       </select>
 
       <select
+        value={selectedCategory}
         onChange={(e) => onCategoryChange(e.target.value)}
         className={styles.select}
       >

@@ -1,6 +1,3 @@
-// First, let's create a custom DatePicker component to show we can build complex UI components
-// Create new file: components/DatePicker/DatePicker.tsx
-
 import React, { useState } from "react";
 import styles from "./DatePicker.module.css";
 

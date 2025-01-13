@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../../context/authContext";
 import { supabase } from "../../../lib/supabaseClient";
 import styles from "./Header.module.css";
+import { ThemeToggle } from "@/components/UI/ThemeToggle/ThemeToggle";
 
 const Header = () => {
   const { user, loading } = useAuth();
@@ -43,6 +44,7 @@ const Header = () => {
           </button>
         )}
       </nav>
+      <ThemeToggle />
     </header>
   );
 };
