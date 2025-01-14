@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Task } from "@/types/task";
-import { Button } from "@/components/UI/Button/Button";
-import { Input } from "@/components/UI/Input/Input";
+import { Task } from "../../../../types/task";
+import { Button } from "../../../../components/UI/Button/Button";
+import { Input } from "../../../../components/UI/Input/Input";
 import styles from "./TaskForm.module.css";
 
 interface TaskFormProps {

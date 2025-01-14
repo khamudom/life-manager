@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { User } from "@supabase/supabase-js";
-import { TaskForm } from "@/app/tasks/components/TaskForm/TaskForm";
-import { TaskFilters } from "@/app/tasks/components/TaskFilters/TaskFilters";
-import { TaskSort } from "@/app/tasks/components/TaskSort/TaskSort";
+import { TaskForm } from "../../app/tasks/components/TaskForm/TaskForm";
+import { TaskFilters } from "../../app/tasks/components/TaskFilters/TaskFilters";
+import { TaskSort } from "../../app/tasks/components/TaskSort/TaskSort";
 import { EditTaskModal } from "@/app/tasks/components/EditTaskModal/EditTaskModal";
-import { Task } from "@/types/task";
+import { Task } from "../../types/task";
 import styles from "./tasks.module.css";
 
 const TasksPage = () => {

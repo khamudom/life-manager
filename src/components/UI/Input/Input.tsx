@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import styles from "./Input.module.css";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -14,8 +14,6 @@ export const Input: React.FC<InputProps> = ({
   className,
   ...props
 }) => {
-  const [isFocused, setIsFocused] = useState(false);
-
   return (
     <div className={styles.inputContainer}>
       <label className={styles.label}>
@@ -28,11 +26,9 @@ export const Input: React.FC<InputProps> = ({
           className || ""
         }`}
         onFocus={(e) => {
-          setIsFocused(true);
           props.onFocus?.(e);
         }}
         onBlur={(e) => {
-          setIsFocused(false);
           props.onBlur?.(e);
         }}
       />
