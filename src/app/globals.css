@@ -8,6 +8,7 @@
   --text-primary: #111827;
   --border-color: #e5e7eb;
   --accent-color: #2563eb;
+  --input-border-color: #d1d5db;
   /* ...other variables */
 }
 
@@ -17,6 +18,7 @@
   --text-primary: #e5e7eb;
   --border-color: #404040;
   --accent-color: #3b82f6;
+  --input-border-color: #6b7280;
   /* ...other variables */
 }
 
