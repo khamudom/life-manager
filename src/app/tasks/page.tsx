@@ -3,40 +3,27 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
-import { User } from "@supabase/supabase-js";
-import { TaskForm } from "../../app/tasks/components/TaskForm/TaskForm";
-import { TaskFilters } from "../../app/tasks/components/TaskFilters/TaskFilters";
-import { TaskSort } from "../../app/tasks/components/TaskSort/TaskSort";
-import { EditTaskModal } from "@/app/tasks/components/EditTaskModal/EditTaskModal";
 import { Task } from "../../types/task";
+import { AddTaskModal } from "./components/AddTaskModal/AddTaskModal";
+import { TaskFilters } from "./components/TaskFilters/TaskFilters";
+import { TaskSort } from "./components/TaskSort/TaskSort";
+import { EditTaskModal } from "./components/EditTaskModal/EditTaskModal";
 import styles from "./tasks.module.css";
 
 const TasksPage = () => {
-  const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPriority, setSelectedPriority] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isAddingTask, setIsAddingTask] = useState(false);
   const [sortBy, setSortBy] = useState<
     "priority" | "due_date" | "title" | "created_at"
   >("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const router = useRouter();
 
-  // Get unique categories from tasks
-  const categories = [
-    ...new Set(
-      tasks
-        .map((task) => task.category)
-        .filter(
-          (category): category is string =>
-            typeof category === "string" && category !== ""
-        )
-    ),
-  ];
-
+  // Fetch tasks from Supabase
   const fetchTasks = async () => {
     try {
       const { data: tasks, error } = await supabase
@@ -55,14 +42,14 @@ const TasksPage = () => {
     }
   };
 
+  // Handle authentication and fetch tasks
   useEffect(() => {
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getUser();
+      const { data, error } = await supabase.auth.getUser();
 
-      if (!data?.user) {
+      if (error || !data.user) {
         router.push("/auth/login");
       } else {
-        setUser(data.user);
         fetchTasks();
       }
     };
@@ -70,16 +57,20 @@ const TasksPage = () => {
     checkAuth();
   }, [router]);
 
-  const handleSubmit = async (taskData: Omit<Task, "id" | "completed">) => {
-    console.log("Task data received in handleSubmit:", taskData);
-
+  // Add a new task
+  const handleAddTask = async (taskData: Omit<Task, "id" | "completed">) => {
     const {
       data: { session },
       error: sessionError,
     } = await supabase.auth.getSession();
 
     if (sessionError) {
-      setMessage(`Error: ${sessionError.message}`);
+      console.error(`Error: ${sessionError.message}`);
+      return;
+    }
+
+    if (!session || !session.access_token) {
+      console.error("Error: Unable to retrieve access token.");
       return;
     }
 
@@ -87,52 +78,34 @@ const TasksPage = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.access_token}`,
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify(taskData),
     });
 
-    const data = await response.json();
-
     if (response.ok) {
-      setMessage("Task added successfully!");
       fetchTasks();
     } else {
-      setMessage(`Error: ${data.error}`);
+      const data = await response.json();
+      console.error(`Error: ${data.error}`);
     }
   };
 
-  const updateTask = async (taskId: number, updatedData: Partial<Task>) => {
-    try {
-      const cleanedData = {
-        ...updatedData,
-        due_date: updatedData.due_date || null,
-      };
-
-      const { error } = await supabase
-        .from("tasks")
-        .update(cleanedData)
-        .match({ id: taskId });
-
-      if (error) {
-        console.error("Supabase error details:", error);
-        throw error;
-      }
-
-      setTasks(
-        tasks.map((task) =>
-          task.id === taskId ? { ...task, ...cleanedData } : task
-        )
-      );
-      setMessage("Task updated successfully!");
-    } catch (error) {
-      console.error("Error updating task:", error);
-      setMessage(
-        error instanceof Error ? error.message : "Error updating task"
-      );
+  // Disable scrolling when modal is open
+  useEffect(() => {
+    if (isAddingTask || editingTask) {
+      document.body.style.overflow = "hidden"; // Disable scrolling
+    } else {
+      document.body.style.overflow = ""; // Enable scrolling
     }
-  };
 
+    // Cleanup when component unmounts
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isAddingTask, editingTask]);
+
+  // Delete a task
   const deleteTask = async (taskId: number) => {
     try {
       const { error } = await supabase
@@ -143,13 +116,12 @@ const TasksPage = () => {
       if (error) throw error;
 
       setTasks(tasks.filter((task) => task.id !== taskId));
-      setMessage("Task deleted successfully!");
     } catch (error) {
       console.error("Error deleting task:", error);
-      setMessage("Error deleting task");
     }
   };
 
+  // Toggle task completion
   const toggleTaskCompletion = async (
     taskId: number,
     currentStatus: boolean
@@ -168,20 +140,11 @@ const TasksPage = () => {
         )
       );
     } catch (error) {
-      console.error("Error toggling task:", error);
+      console.error("Error toggling task completion:", error);
     }
   };
 
-  const handleSortChange = (
-    newSort: "priority" | "due_date" | "title" | "created_at"
-  ) => {
-    setSortBy(newSort);
-  };
-
-  const handleOrderChange = () => {
-    setSortOrder((current) => (current === "asc" ? "desc" : "asc"));
-  };
-
+  // Sort tasks
   const sortTasks = (tasks: Task[]) => {
     return [...tasks].sort((a, b) => {
       switch (sortBy) {
@@ -206,7 +169,6 @@ const TasksPage = () => {
     });
   };
 
-  // Filter tasks based on search, priority, and category
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -218,22 +180,23 @@ const TasksPage = () => {
     return matchesSearch && matchesPriority && matchesCategory;
   });
 
-  if (!user) {
-    return <p>Loading...</p>;
-  }
-
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Tasks</h1>
-
-      <TaskForm onSubmit={handleSubmit} />
-
+      <div className={styles.headerRow}>
+        <h1 className={styles.title}>Tasks</h1>
+        <button
+          className={styles.addButton}
+          onClick={() => setIsAddingTask(true)}
+        >
+          + Add Task
+        </button>
+      </div>
       <div className={styles.toolbarRow}>
         <TaskFilters
           onSearchChange={setSearchQuery}
           onPriorityChange={setSelectedPriority}
           onCategoryChange={setSelectedCategory}
-          categories={categories}
+          categories={[...new Set(tasks.map((task) => task.category || ""))]}
           searchValue={searchQuery}
           selectedPriority={selectedPriority}
           selectedCategory={selectedCategory}
@@ -241,15 +204,14 @@ const TasksPage = () => {
         <TaskSort
           sortBy={sortBy}
           sortOrder={sortOrder}
-          onSortChange={handleSortChange}
-          onOrderChange={handleOrderChange}
+          onSortChange={setSortBy}
+          onOrderChange={() =>
+            setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"))
+          }
         />
       </div>
 
-      {message && <p className={styles.message}>{message}</p>}
-
       <div className={styles.taskList}>
-        <h2 className={styles.taskListTitle}>Your Tasks</h2>
         {filteredTasks.length === 0 ? (
           <p className={styles.emptyMessage}>No tasks found.</p>
         ) : (
@@ -310,6 +272,7 @@ const TasksPage = () => {
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
+                    Edit
                   </button>
                   <button
                     onClick={() => deleteTask(task.id)}
@@ -327,6 +290,7 @@ const TasksPage = () => {
                     >
                       <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                     </svg>
+                    Delete
                   </button>
                 </div>
               </li>
@@ -335,10 +299,16 @@ const TasksPage = () => {
         )}
       </div>
 
+      {isAddingTask && (
+        <AddTaskModal
+          onSubmit={handleAddTask}
+          onClose={() => setIsAddingTask(false)}
+        />
+      )}
       {editingTask && (
         <EditTaskModal
           task={editingTask}
-          onSave={updateTask}
+          onSave={() => fetchTasks()}
           onClose={() => setEditingTask(null)}
         />
       )}

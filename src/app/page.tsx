@@ -1,26 +1,19 @@
 "use client";
 
 import { useAuth } from "../context/authContext";
+import Login from "../components/UI/Login/Login";
+import Dashboard from "../components/Layout/Dashboard/Dashboard";
+import styles from "./page.module.css";
 
 const Home = () => {
   const { user, loading } = useAuth();
 
-  // Handle loading state
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className={styles.loading}>Loading...</div>;
   }
 
   return (
-    <div>
-      <main>
-        <h1>
-          {user
-            ? `Welcome, ${user.email} to Life Manager`
-            : "Welcome to Life Manager!"}
-        </h1>
-        <p>Organize your tasks, events, and more!</p>
-      </main>
-    </div>
+    <div className={styles.container}>{user ? <Dashboard /> : <Login />}</div>
   );
 };
 

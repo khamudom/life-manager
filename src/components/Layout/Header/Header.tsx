@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
+// import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../context/authContext";
 import { supabase } from "../../../lib/supabaseClient";
 import styles from "./Header.module.css";
 import { ThemeToggle } from "@/components/UI/ThemeToggle/ThemeToggle";
+import Link from "next/link";
 
 const Header = () => {
   const { user, loading } = useAuth();
@@ -25,26 +26,30 @@ const Header = () => {
 
   return (
     <header className={styles.header}>
-      <h1>Life Manager</h1>
-      <nav>
-        <Link href="/" className={styles.navLink}>
-          Home
-        </Link>
-        <Link href="/tasks" className={styles.navLink}>
-          Tasks
-        </Link>
-        {!loading && !user && (
-          <Link href="/auth/login" className={styles.navLink}>
-            LogIn
-          </Link>
-        )}
-        {!loading && user && (
-          <button onClick={handleLogout} className={styles.navLink}>
-            LogOut
-          </button>
-        )}
-      </nav>
-      <ThemeToggle />
+      <Link href="/" className={styles.logo}>
+        <h2>Life Manager</h2>
+      </Link>
+      <div className={styles.actions}>
+        <nav>
+          {/* <Link href="/" className={styles.navLink}>
+            Home
+          </Link> */}
+          {/* <Link href="/tasks" className={styles.navLink}>
+            Tasks
+          </Link> */}
+          {/* {!loading && !user && (
+            <Link href="/auth/login" className={styles.navLink}>
+              LogIn
+            </Link>
+          )} */}
+          {!loading && user && (
+            <button onClick={handleLogout} className={styles.navLink}>
+              LogOut
+            </button>
+          )}
+        </nav>
+        <ThemeToggle />
+      </div>
     </header>
   );
 };

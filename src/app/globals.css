@@ -42,6 +42,5 @@ main {
   flex: 1; /* Push the footer to the bottom */
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Center content vertically if needed */
   padding: 1rem;
 }

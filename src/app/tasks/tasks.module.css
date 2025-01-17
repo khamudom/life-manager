@@ -4,6 +4,11 @@
   margin: 0 auto;
 }
 
+.headerRow {
+  display: flex;
+  align-items: center;
+}
+
 .title {
   font-size: 2rem;
   font-weight: bold;
